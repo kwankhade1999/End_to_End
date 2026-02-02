@@ -58,7 +58,7 @@ pipeline {
             steps {
                 sshagent(credentials: ['git_token']) {
                 dir(ANSIBLE_DIR) {
-                    sh 'site.yml'
+                    sh 'ansible-playbook site.yml'
                 }
                 }
             }
