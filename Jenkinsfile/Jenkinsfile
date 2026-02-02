@@ -56,8 +56,10 @@ pipeline {
 
         stage('Ansible Configuration') {
             steps {
+                sshagent(credentials: ['test1-ssh']) {
                 dir(ANSIBLE_DIR) {
                     sh 'ansible-playbook site.yml'
+                }
                 }
             }
         }
