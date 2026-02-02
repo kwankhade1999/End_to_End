@@ -4,6 +4,8 @@ pipeline {
 
     environment {
         TERRAFORM_DIR = "terraform/environments/dev"
+        ANSIBLE_DIR   = "ansible"
+        INVENTORY_GEN = "ansible/scripts/generate_inventory.sh"
     }
 
     options {
@@ -26,22 +28,52 @@ pipeline {
             }
         }
 
-        stage('Terraform Destroy') {
+        stage('Terraform Validate') {
             steps {
-                input message: '⚠️ Approve Terraform Destroy? This will delete AWS resources'
                 dir(TERRAFORM_DIR) {
-                    sh 'terraform destroy -auto-approve'
+                    sh 'terraform validate'
                 }
             }
+        }
+
+        stage('Terraform Apply') {
+            steps {
+                input message: 'Approve Terraform Apply?'
+                dir(TERRAFORM_DIR) {
+                    sh 'terraform apply -auto-approve'
+                }
+            }
+        }
+
+        stage('Generate Ansible Inventory') {
+            steps {
+                sh '''
+                    chmod +x ${INVENTORY_GEN}
+                    ${INVENTORY_GEN}
+                '''
+            }
+        }
+
+        stage('Ansible Configuration') {
+    steps {
+        dir('ansible') {
+            sh '''
+              ansible-playbook site.yml \
+              -i inventories/dev/hosts.ini \
+              --private-key ~/.ssh/ap-south.pem
+            '''
+        }
+    }
+
         }
     }
 
     post {
         success {
-            echo "🧨 Infrastructure destroyed successfully"
+            echo "✅ End-to-End DevOps platform deployed successfully"
         }
         failure {
-            echo "❌ Destroy failed — check logs"
+            echo "❌ Pipeline failed — check logs"
         }
     }
 }
