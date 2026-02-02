@@ -56,14 +56,16 @@ pipeline {
 
         stage('Ansible Configuration') {
     steps {
-        dir('ansible') {
-            sh '''
-              ansible-playbook site.yml \
-              -i inventories/dev/hosts.ini \
-              --private-key ~/.ssh/ap-south.pem
-            '''
+        sshagent(credentials: ['ec2-ap-south']) {
+            dir('ansible') {
+                sh '''
+                  ansible-playbook site.yml \
+                  -i inventories/dev/hosts.ini
+                '''
+            }
         }
     }
+}
 
         }
     }
