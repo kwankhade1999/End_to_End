@@ -1,12 +1,22 @@
 ---
 #############################################
+# Get latest Kubernetes version
+#############################################
+- name: Get latest kubectl version
+  ansible.builtin.uri:
+    url: https://dl.k8s.io/release/stable.txt
+    return_content: yes
+  register: kubectl_version
+
+#############################################
 # Install kubectl
 #############################################
-- name: Download kubectl binary
-  get_url:
-    url: https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl
+
+- name: Download kubectl
+  ansible.builtin.get_url:
+    url: "https://dl.k8s.io/release/{{ kubectl_version.content | trim }}/bin/linux/amd64/kubectl"
     dest: /usr/local/bin/kubectl
-    mode: '0755'
+    mode: '0755
   become: true
 
 - name: Verify kubectl installation
