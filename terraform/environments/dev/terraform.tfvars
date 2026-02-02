@@ -1,1 +1,1 @@
-key_name = "KeyPair"
+key_name = "ap-south"
