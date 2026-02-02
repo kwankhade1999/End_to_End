@@ -1,0 +1,75 @@
+pipeline {
+
+    agent any
+
+    environment {
+        TERRAFORM_DIR = "terraform/environments/dev"
+        ANSIBLE_DIR   = "ansible"
+        INVENTORY_GEN = "ansible/scripts/generate_inventory.sh"
+    }
+
+    options {
+        timestamps()
+        ansiColor('xterm')
+    }
+
+    stages {
+
+        stage('Checkout') {
+            steps {
+                checkout scm
+            }
+        }
+
+        stage('Terraform Init') {
+            steps {
+                dir(TERRAFORM_DIR) {
+                    sh 'terraform init'
+                }
+            }
+        }
+
+        stage('Terraform Validate') {
+            steps {
+                dir(TERRAFORM_DIR) {
+                    sh 'terraform validate'
+                }
+            }
+        }
+
+        stage('Terraform Apply') {
+            steps {
+                input message: 'Approve Terraform Apply?'
+                dir(TERRAFORM_DIR) {
+                    sh 'terraform apply -auto-approve'
+                }
+            }
+        }
+
+        stage('Generate Ansible Inventory') {
+            steps {
+                sh '''
+                    chmod +x ${INVENTORY_GEN}
+                    ${INVENTORY_GEN}
+                '''
+            }
+        }
+
+        stage('Ansible Configuration') {
+            steps {
+                dir(ANSIBLE_DIR) {
+                    sh 'ansible-playbook site.yml'
+                }
+            }
+        }
+    }
+
+    post {
+        success {
+            echo "✅ End-to-End DevOps platform deployed successfully"
+        }
+        failure {
+            echo "❌ Pipeline failed — check logs"
+        }
+    }
+}

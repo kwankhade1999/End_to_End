@@ -1,0 +1,67 @@
+---
+#############################################
+# Ensure kubectl is available
+#############################################
+- name: Check kubectl availability
+  command: kubectl version --client
+  register: kubectl_check
+  changed_when: false
+
+#############################################
+# Create ArgoCD namespace
+#############################################
+- name: Create argocd namespace
+  command: kubectl create namespace argocd
+  register: argocd_ns
+  failed_when: false
+  changed_when: "'created' in argocd_ns.stdout"
+
+#############################################
+# Install ArgoCD
+#############################################
+- name: Install ArgoCD manifests
+  command: >
+    kubectl apply
+    -n argocd
+    -f https://raw.githubusercontent.com/argoproj/argo-cd/stable/manifests/install.yaml
+  register: argocd_install
+  changed_when: "'configured' in argocd_install.stdout or 'created' in argocd_install.stdout"
+
+#############################################
+# Expose ArgoCD Server (NodePort)
+#############################################
+- name: Patch ArgoCD service to NodePort
+  command: >
+    kubectl patch svc argocd-server
+    -n argocd
+    -p '{"spec": {"type": "NodePort"}}'
+  register: argocd_svc
+  failed_when: false
+  changed_when: false
+
+#############################################
+# Wait for ArgoCD server pod
+#############################################
+- name: Wait for ArgoCD server to be ready
+  command: >
+    kubectl wait
+    --for=condition=available
+    deployment/argocd-server
+    -n argocd
+    --timeout=300s
+  changed_when: false
+
+#############################################
+# Get ArgoCD admin password
+#############################################
+- name: Get ArgoCD initial admin password
+  command: >
+    kubectl get secret argocd-initial-admin-secret
+    -n argocd
+    -o jsonpath="{.data.password}"
+  register: argocd_password
+  changed_when: false
+
+- name: Decode ArgoCD admin password
+  debug:
+    msg: "ArgoCD admin password: {{ argocd_password.stdout | b64decode }}"

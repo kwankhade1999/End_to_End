@@ -1,0 +1,50 @@
+---
+#############################################
+# Install kubectl
+#############################################
+- name: Download kubectl binary
+  get_url:
+    url: https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl
+    dest: /usr/local/bin/kubectl
+    mode: '0755'
+  become: true
+
+- name: Verify kubectl installation
+  command: kubectl version --client
+  register: kubectl_version
+  changed_when: false
+
+#############################################
+# Install Minikube
+#############################################
+- name: Download minikube binary
+  get_url:
+    url: https://storage.googleapis.com/minikube/releases/latest/minikube-linux-amd64
+    dest: /usr/local/bin/minikube
+    mode: '0755'
+  become: true
+
+- name: Verify minikube installation
+  command: minikube version
+  register: minikube_version
+  changed_when: false
+
+#############################################
+# Configure Minikube (Docker driver)
+#############################################
+- name: Set minikube driver to docker
+  command: minikube config set driver docker
+  become: false
+
+#############################################
+# Start Minikube
+#############################################
+- name: Start Minikube
+  command: >
+    minikube start
+    --driver=docker
+    --container-runtime=containerd
+    --force
+  become: false
+  environment:
+    CHANGE_MINIKUBE_NONE_USER: "true"

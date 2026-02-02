@@ -1,0 +1,41 @@
+---
+#############################################
+# SonarQube prerequisites
+#############################################
+- name: Ensure vm.max_map_count is set
+  sysctl:
+    name: vm.max_map_count
+    value: 262144
+    state: present
+    reload: yes
+
+#############################################
+# Create SonarQube directories
+#############################################
+- name: Create SonarQube data directories
+  file:
+    path: "{{ item }}"
+    state: directory
+    owner: 999
+    group: 999
+    mode: '0755'
+  loop:
+    - /opt/sonarqube/data
+    - /opt/sonarqube/extensions
+    - /opt/sonarqube/logs
+
+#############################################
+# Run SonarQube container
+#############################################
+- name: Run SonarQube container
+  docker_container:
+    name: sonarqube
+    image: sonarqube:9.9-community
+    state: started
+    restart_policy: always
+    ports:
+      - "9000:9000"
+    volumes:
+      - /opt/sonarqube/data:/opt/sonarqube/data
+      - /opt/sonarqube/extensions:/opt/sonarqube/extensions
+      - /opt/sonarqube/logs:/opt/sonarqube/logs

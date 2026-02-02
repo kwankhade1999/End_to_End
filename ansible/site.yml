@@ -1,0 +1,40 @@
+---
+#############################################
+# Common configuration (all servers)
+#############################################
+- name: Common setup for all servers
+  hosts: devops_tools
+  become: true
+
+  roles:
+    - common
+
+#############################################
+# Minikube server
+#############################################
+- name: Install Minikube
+  hosts: minikube
+  become: true
+
+  roles:
+    - minikube
+
+#############################################
+# SonarQube server
+#############################################
+- name: Install SonarQube
+  hosts: sonarqube
+  become: true
+
+  roles:
+    - sonarqube
+
+#############################################
+# ArgoCD server
+#############################################
+- name: Install ArgoCD
+  hosts: argocd
+  become: true
+
+  roles:
+    - argocd
