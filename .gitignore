@@ -1,11 +1,10 @@
 # Terraform
-.terraform/
+**/.terraform/*
 *.tfstate
-*.tfstate.backup
+*.tfstate.*
 *.tfvars
-
-# Ansible
-*.retry
-
-# OS
-.DS_Store
+.crash.log
+.override.tf
+.override.tf.json
+terraform.rc
+.terraform.lock.hcl
