@@ -56,7 +56,7 @@ pipeline {
 
         stage('Ansible Configuration') {
             steps {
-                sshagent(credentials: ['github-token']) {
+                sshagent(credentials: ['git_token']) {
                 dir(ANSIBLE_DIR) {
                     sh 'site.yml'
                 }
