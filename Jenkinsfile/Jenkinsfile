@@ -55,13 +55,16 @@ pipeline {
         }
 
         stage('Ansible Configuration') {
-            steps {
-                sshagent(credentials: ['git_token']) {
-                dir(ANSIBLE_DIR) {
-                    sh 'ansible-playbook site.yml'
-                }
-                }
-            }
+    steps {
+        dir('ansible') {
+            sh '''
+              ansible-playbook site.yml \
+              -i inventories/dev/hosts.ini \
+              --private-key ~/.ssh/test1.pem
+            '''
+        }
+    }
+}
         }
     }
 
