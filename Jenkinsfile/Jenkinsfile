@@ -1,5 +1,13 @@
 pipeline {
 
+     parameters {
+        booleanParam(
+            name: 'DESTROY',
+            defaultValue: false,
+            description: 'If true, Terraform DESTROY will run instead of APPLY'
+        )
+    }
+
     agent any
 
     environment {
@@ -36,16 +44,30 @@ pipeline {
             }
         }
 
-        stage('Terraform Apply') {
-            steps {
-                input message: 'Approve Terraform Apply?'
+        stage('Terraform Apply / Destroy') {
+    steps {
+        script {
+            if (params.DESTROY) {
+                input message: '⚠️ Approve Terraform DESTROY? This will delete AWS resources'
+                dir(TERRAFORM_DIR) {
+                    sh 'terraform destroy -auto-approve'
+                }
+            } else {
+                input message: 'Approve Terraform APPLY?'
                 dir(TERRAFORM_DIR) {
                     sh 'terraform apply -auto-approve'
                 }
             }
         }
+    }
+}
 
         stage('Generate Ansible Inventory') {
+        
+        when {
+        expression { return !params.DESTROY }
+            }
+                
             steps {
                 sh '''
                     chmod +x ${INVENTORY_GEN}
