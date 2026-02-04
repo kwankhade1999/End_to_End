@@ -21,7 +21,7 @@ output "minikube_instance_id" {
 
 output "minikube_public_ip" {
   description = "Minikube public IP"
-  value       = module.minikube.public_ip
+  value       = var.enable_minikube ? module.minikube[0].public_ip : null
 }
 
 ########################################
@@ -34,7 +34,7 @@ output "sonarqube_instance_id" {
 
 output "sonarqube_public_ip" {
   description = "SonarQube public IP"
-  value       = module.sonarqube.public_ip
+  value       = var.enable_sonarqube ? module.sonarqube[0].public_ip : null
 }
 
 ########################################
@@ -42,7 +42,7 @@ output "sonarqube_public_ip" {
 ########################################
 output "argocd_instance_id" {
   description = "ArgoCD EC2 instance ID"
-  value       = module.argocd.instance_id
+  value       = var.enable_argocd ? module.argocd[0].instance_id : null
 }
 
 output "argocd_public_ip" {
