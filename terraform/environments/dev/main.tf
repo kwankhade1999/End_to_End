@@ -48,7 +48,7 @@ module "minikube" {
   env                = var.env
   ami                = data.aws_ami.ubuntu.id
   instance_type      = var.instance_type
-  subnet_id          = module.vpc.public_subnet_id
+  subnet_id          = module.vpc.public_subnet_ids[0]
   key_name           = var.key_name
   security_group_ids = [
     module.security_groups.common_sg_id,
@@ -67,7 +67,7 @@ module "sonarqube" {
   env                = var.env
   ami                = data.aws_ami.ubuntu.id
   instance_type      = var.instance_type
-  subnet_id          = module.vpc.public_subnet_id
+  subnet_id          = module.vpc.public_subnet_ids[0]
   key_name           = var.key_name
   security_group_ids = [
     module.security_groups.common_sg_id,
@@ -86,7 +86,7 @@ module "argocd" {
   env                = var.env
   ami                = data.aws_ami.ubuntu.id
   instance_type      = var.instance_type
-  subnet_id          = module.vpc.public_subnet_id
+  subnet_id          = module.vpc.public_subnet_ids[0]
   key_name           = var.key_name
   security_group_ids = [
     module.security_groups.common_sg_id,
@@ -103,5 +103,5 @@ module "eks" {
   source = "../../modules/eks"
 
   cluster_name = "dev-eks-cluster"
-  subnet_ids   = [module.vpc.public_subnet_id]
+  subnet_ids   = module.vpc.public_subnet_ids
 }

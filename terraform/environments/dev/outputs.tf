@@ -6,9 +6,9 @@ output "vpc_id" {
   value       = module.vpc.vpc_id
 }
 
-output "public_subnet_id" {
-  description = "Public Subnet ID"
-  value       = module.vpc.public_subnet_id
+output "public_subnet_ids" {
+  description = "Public Subnet IDs"
+  value       = module.vpc.public_subnet_ids
 }
 
 ########################################
