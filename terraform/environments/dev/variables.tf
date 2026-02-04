@@ -20,3 +20,21 @@ variable "key_name" {
   description = "EC2 key pair name for SSH access"
   type        = string
 }
+
+variable "enable_minikube" {
+  description = "Enable Minikube EC2"
+  type        = bool
+  default     = true
+}
+
+variable "enable_sonarqube" {
+  description = "Enable SonarQube EC2"
+  type        = bool
+  default     = true
+}
+
+variable "enable_argocd" {
+  description = "Enable ArgoCD EC2"
+  type        = bool
+  default     = true
+}

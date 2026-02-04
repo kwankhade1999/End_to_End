@@ -42,6 +42,7 @@ data "aws_ami" "ubuntu" {
 ########################################
 module "minikube" {
   source = "../../modules/ec2"
+  count  = var.enable_minikube ? 1 : 0
 
   name               = "minikube-${var.env}"
   env                = var.env
@@ -60,6 +61,7 @@ module "minikube" {
 ########################################
 module "sonarqube" {
   source = "../../modules/ec2"
+  count  = var.enable_sonarqube ? 1 : 0
 
   name               = "sonarqube-${var.env}"
   env                = var.env
@@ -78,6 +80,7 @@ module "sonarqube" {
 ########################################
 module "argocd" {
   source = "../../modules/ec2"
+  count  = var.enable_argocd ? 1 : 0
 
   name               = "argocd-${var.env}"
   env                = var.env
@@ -89,4 +92,16 @@ module "argocd" {
     module.security_groups.common_sg_id,
     module.security_groups.tools_sg_id
   ]
+}
+
+########################################
+# EKS Cluster
+########################################
+
+
+module "eks" {
+  source = "../../modules/eks"
+
+  cluster_name = "dev-eks-cluster"
+  subnet_ids   = [module.vpc.public_subnet_id]
 }
