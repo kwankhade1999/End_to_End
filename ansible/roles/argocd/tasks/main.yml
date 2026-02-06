@@ -1,5 +1,36 @@
 ---
 #############################################
+# Ensure required packages
+#############################################
+- name: Install base dependencies
+  apt:
+    name:
+      - curl
+      - unzip
+    state: present
+    update_cache: yes
+  become: true
+
+#############################################
+# Install awscli (required for EKS)
+#############################################
+- name: Check awscli availability
+  command: aws --version
+  register: awscli_check
+  failed_when: false
+  changed_when: false
+
+- name: Install awscli if missing
+  shell: |
+    curl -s "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o awscliv2.zip
+    unzip -o awscliv2.zip
+    sudo ./aws/install
+  when: awscli_check.rc != 0
+  args:
+    creates: /usr/local/bin/aws
+  become: true
+
+#############################################
 # Ensure kubectl is available
 #############################################
 - name: Check kubectl availability
@@ -14,6 +45,29 @@
     dest: /usr/local/bin/kubectl
     mode: '0755'
   when: kubectl_check.rc != 0
+  become: true
+
+#############################################
+# Configure kubeconfig for EKS
+#############################################
+- name: Configure kubeconfig for EKS
+  shell: |
+    aws eks update-kubeconfig \
+      --region {{ aws_region }} \
+      --name {{ eks_cluster_name }}
+  environment:
+    AWS_DEFAULT_REGION: "{{ aws_region }}"
+  changed_when: false
+
+#############################################
+# Verify cluster connectivity
+#############################################
+- name: Verify kubectl access to EKS
+  command: kubectl get nodes
+  register: kubectl_nodes
+  failed_when: kubectl_nodes.rc != 0
+  changed_when: false
+
 #############################################
 # Create ArgoCD namespace
 #############################################
@@ -31,6 +85,7 @@
     kubectl apply
     -n argocd
     -f https://raw.githubusercontent.com/argoproj/argo-cd/stable/manifests/install.yaml
+    --validate=false
   register: argocd_install
   changed_when: "'configured' in argocd_install.stdout or 'created' in argocd_install.stdout"
 
@@ -42,12 +97,11 @@
     kubectl patch svc argocd-server
     -n argocd
     -p '{"spec": {"type": "NodePort"}}'
-  register: argocd_svc
   failed_when: false
   changed_when: false
 
 #############################################
-# Wait for ArgoCD server pod
+# Wait for ArgoCD server
 #############################################
 - name: Wait for ArgoCD server to be ready
   command: >
