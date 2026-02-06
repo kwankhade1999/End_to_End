@@ -5,8 +5,15 @@
 - name: Check kubectl availability
   command: kubectl version --client
   register: kubectl_check
+  failed_when: false
   changed_when: false
 
+- name: Install kubectl if missing
+  get_url:
+    url: https://dl.k8s.io/release/v1.29.0/bin/linux/amd64/kubectl
+    dest: /usr/local/bin/kubectl
+    mode: '0755'
+  when: kubectl_check.rc != 0
 #############################################
 # Create ArgoCD namespace
 #############################################
