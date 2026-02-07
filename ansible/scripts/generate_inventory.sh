@@ -17,12 +17,12 @@ MINIKUBE_IP=$(get_tf_output minikube_public_ip)
 SONAR_IP=$(get_tf_output sonarqube_public_ip)
 ARGO_IP=$(get_tf_output argocd_public_ip)
 
-# Start fresh
+# Start clean
 > "$INV_FILE"
 
-# Track existing groups
-GROUPS=()
+declare -a GROUPS=()
 
+# Minikube
 if [[ -n "$MINIKUBE_IP" ]]; then
 cat >> "$INV_FILE" <<EOF
 [minikube]
@@ -32,6 +32,7 @@ EOF
 GROUPS+=("minikube")
 fi
 
+# SonarQube
 if [[ -n "$SONAR_IP" ]]; then
 cat >> "$INV_FILE" <<EOF
 [sonarqube]
@@ -41,6 +42,7 @@ EOF
 GROUPS+=("sonarqube")
 fi
 
+# ArgoCD
 if [[ -n "$ARGO_IP" ]]; then
 cat >> "$INV_FILE" <<EOF
 [argocd]
@@ -50,7 +52,7 @@ EOF
 GROUPS+=("argocd")
 fi
 
-# Create parent group only if at least one child exists
+# Parent group (ONLY valid group names)
 if [[ ${#GROUPS[@]} -gt 0 ]]; then
   echo "[devops_tools:children]" >> "$INV_FILE"
   for g in "${GROUPS[@]}"; do
