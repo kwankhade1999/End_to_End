@@ -104,4 +104,6 @@ module "eks" {
 
   cluster_name = "dev-eks-cluster"
   subnet_ids   = module.vpc.public_subnet_ids
+ 
+  argocd_ec2_role_arn = module.ec2.argocd_ec2_role_arn
 }
