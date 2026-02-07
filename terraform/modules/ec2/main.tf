@@ -57,3 +57,25 @@ resource "aws_iam_role_policy_attachment" "eks_worker_access" {
   role       = aws_iam_role.argocd_ec2_role.name
   policy_arn = "arn:aws:iam::aws:policy/AmazonEKSWorkerNodePolicy"
 }
+############################################
+# Explicit EKS DescribeCluster permission
+############################################
+
+resource "aws_iam_role_policy" "eks_describe_cluster" {
+  name = "${var.name}-eks-describe"
+  role = aws_iam_role.argocd_ec2_role.id
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect   = "Allow"
+        Action   = [
+          "eks:DescribeCluster",
+          "eks:ListClusters"
+        ]
+        Resource = "*"
+      }
+    ]
+  })
+}
