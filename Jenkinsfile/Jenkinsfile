@@ -1,14 +1,14 @@
 pipeline {
 
-     parameters {
+    agent any
+
+    parameters {
         booleanParam(
             name: 'DESTROY',
             defaultValue: false,
             description: 'If true, Terraform DESTROY will run instead of APPLY'
         )
     }
-
-    agent any
 
     environment {
         TERRAFORM_DIR = "terraform/environments/dev"
@@ -18,6 +18,7 @@ pipeline {
 
     options {
         timestamps()
+        disableConcurrentBuilds()
     }
 
     stages {
@@ -31,7 +32,9 @@ pipeline {
         stage('Terraform Init') {
             steps {
                 dir(TERRAFORM_DIR) {
-                    sh 'terraform init'
+                    sh '''
+                      terraform init -reconfigure
+                    '''
                 }
             }
         }
@@ -45,61 +48,67 @@ pipeline {
         }
 
         stage('Terraform Apply / Destroy') {
-    steps {
-        script {
-            if (params.DESTROY) {
-                input message: '⚠️ Approve Terraform DESTROY? This will delete AWS resources'
-                dir(TERRAFORM_DIR) {
-                    sh 'terraform destroy -auto-approve'
-                }
-            } else {
-                input message: 'Approve Terraform APPLY?'
-                dir(TERRAFORM_DIR) {
-                    sh 'terraform apply -auto-approve'
+            steps {
+                script {
+                    if (params.DESTROY) {
+                        input message: '⚠️ Approve Terraform DESTROY? This will delete ALL AWS resources.'
+                        dir(TERRAFORM_DIR) {
+                            sh 'terraform destroy -auto-approve'
+                        }
+                    } else {
+                        input message: 'Approve Terraform APPLY?'
+                        dir(TERRAFORM_DIR) {
+                            sh 'terraform apply -auto-approve'
+                        }
+                    }
                 }
             }
         }
-    }
-}
 
         stage('Generate Ansible Inventory') {
-        
-        when {
-        expression { return !params.DESTROY }
+            when {
+                expression { !params.DESTROY }
             }
-                
             steps {
                 sh '''
-                    chmod +x ${INVENTORY_GEN}
-                    ${INVENTORY_GEN}
+                  chmod +x ${INVENTORY_GEN}
+                  ${INVENTORY_GEN}
                 '''
             }
         }
 
         stage('Ansible Configuration') {
-    steps {
-        sshagent(credentials: ['ec2-ap-south']) {
-            dir('ansible') {
-                sh '''
-                  ansible-playbook site.yml \
-                  -i inventories/dev/hosts.ini
-                '''
+            when {
+                expression { !params.DESTROY }
             }
-        }
-    
-}
-
+            steps {
+                sshagent(credentials: ['ec2-ap-south']) {
+                    dir(ANSIBLE_DIR) {
+                        sh '''
+                          ansible-playbook site.yml \
+                          -i inventories/dev/hosts.ini
+                        '''
+                    }
+                }
+            }
         }
     }
 
     post {
         success {
-            echo "✅ End-to-End DevOps platform deployed successfully"
+            script {
+                if (params.DESTROY) {
+                    echo "🧨 Infrastructure destroyed successfully"
+                } else {
+                    echo "✅ End-to-End DevOps platform deployed successfully"
+                }
+            }
         }
         failure {
-            echo "❌ Pipeline failed — check logs"
+            echo "❌ Pipeline failed — check logs carefully"
+        }
+        aborted {
+            echo "⏸️ Pipeline aborted by user"
         }
     }
-    
-
 }
