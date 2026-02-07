@@ -7,7 +7,7 @@ resource "aws_instance" "this" {
 
   user_data = var.user_data
   iam_instance_profile = aws_iam_instance_profile.argocd_profile.name
-  
+
   tags = {
     Name = var.name
     Env  = var.env
@@ -48,4 +48,12 @@ resource "aws_iam_role_policy_attachment" "eks_access" {
 resource "aws_iam_instance_profile" "argocd_profile" {
   name = "${var.name}-argocd-instance-profile"
   role = aws_iam_role.argocd_ec2_role.name
+}
+############################################
+# Allow EC2 to interact with EKS APIs
+############################################
+
+resource "aws_iam_role_policy_attachment" "eks_worker_access" {
+  role       = aws_iam_role.argocd_ec2_role.name
+  policy_arn = "arn:aws:iam::aws:policy/AmazonEKSWorkerNodePolicy"
 }
