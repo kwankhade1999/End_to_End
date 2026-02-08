@@ -82,7 +82,7 @@
 #############################################
 - name: Install ArgoCD manifests
   command: >
-    kubectl apply
+    kubectl apply --server-side
     -n argocd
     -f https://raw.githubusercontent.com/argoproj/argo-cd/stable/manifests/install.yaml
     --validate=false
