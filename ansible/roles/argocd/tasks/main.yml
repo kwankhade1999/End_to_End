@@ -48,8 +48,6 @@
   when: kubectl_check.rc != 0
   become: true
 
-  vars:
-   kubeconfig_path: /home/ubuntu/.kube/config
 
 #############################################
 # Configure kubeconfig for EKS
