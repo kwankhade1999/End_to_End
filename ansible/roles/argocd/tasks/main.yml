@@ -1,4 +1,5 @@
 ---
+
 #############################################
 # Ensure required packages
 #############################################
@@ -47,48 +48,67 @@
   when: kubectl_check.rc != 0
   become: true
 
+  vars:
+   kubeconfig_path: /home/ubuntu/.kube/config
+
 #############################################
 # Configure kubeconfig for EKS
 #############################################
+
+- name: Ensure .kube directory exists
+  file:
+    path: /home/ubuntu/.kube
+    state: directory
+    owner: ubuntu
+    group: ubuntu
+    mode: '0755'
+  become: true
+
 - name: Configure kubeconfig for EKS
-  shell: |
-    aws eks update-kubeconfig \
-      --region {{ aws_region }} \
-      --name {{ eks_cluster_name }}
-  environment:
-    AWS_DEFAULT_REGION: "{{ aws_region }}"
-  changed_when: false
+  command: >
+    aws eks update-kubeconfig
+    --region {{ aws_region }}
+    --name {{ eks_cluster_name }}
+    --kubeconfig {{ kubeconfig_path }}
+  become: true
+  become_user: ubuntu
 
 #############################################
-# Verify cluster connectivity
+# Verify cluster connectivity (WITH RETRY)
 #############################################
-- name: Verify kubectl access to EKS
+
+- name: Verify kubectl access to EKS (retry)
   command: kubectl get nodes
   register: kubectl_nodes
-  failed_when: kubectl_nodes.rc != 0
-  changed_when: false
+  retries: 5
+  delay: 20
+  until: kubectl_nodes.rc == 0
+  environment:
+    KUBECONFIG: "{{ kubeconfig_path }}"
 
 #############################################
-# Create ArgoCD namespace
+# Ensure Namespace
 #############################################
-- name: Create argocd namespace
-  command: kubectl create namespace argocd
-  register: argocd_ns
-  failed_when: false
-  changed_when: "'created' in argocd_ns.stdout"
+
+- name: Ensure argocd namespace exists
+  command: kubectl create namespace argocd --dry-run=client -o yaml | kubectl apply -f -
+  environment:
+    KUBECONFIG: "{{ kubeconfig_path }}"
+  changed_when: false
 
 #############################################
 # Install ArgoCD
 #############################################
+
 - name: Install ArgoCD manifests
   command: >
     kubectl apply --server-side
-    --force-conflicts
     -n argocd
     -f https://raw.githubusercontent.com/argoproj/argo-cd/stable/manifests/install.yaml
     --validate=false
-  register: argocd_install
-  changed_when: "'configured' in argocd_install.stdout or 'created' in argocd_install.stdout"
+  environment:
+    KUBECONFIG: "{{ kubeconfig_path }}"
+
 
 #############################################
 # Expose ArgoCD Server (NodePort)
@@ -104,14 +124,22 @@
 #############################################
 # Wait for ArgoCD server
 #############################################
-- name: Wait for ArgoCD server to be ready
+
+- name: Wait for ArgoCD rollout
   command: >
-    kubectl wait
-    --for=condition=available
-    deployment/argocd-server
-    -n argocd
-    --timeout=300s
+    kubectl rollout status deployment argocd-server -n argocd --timeout=600s
+  environment:
+    KUBECONFIG: "{{ kubeconfig_path }}"
   changed_when: false
+
+- name: Verify kubectl access to EKS (retry)
+  command: kubectl get nodes
+  register: kubectl_nodes
+  retries: 5
+  delay: 20
+  until: kubectl_nodes.rc == 0
+  environment:
+    KUBECONFIG: "{{ kubeconfig_path }}"
 
 #############################################
 # Get ArgoCD admin password
