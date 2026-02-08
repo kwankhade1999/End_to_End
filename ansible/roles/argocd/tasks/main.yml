@@ -89,10 +89,12 @@
 #############################################
 
 - name: Ensure argocd namespace exists
-  command: kubectl create namespace argocd --dry-run=client -o yaml | kubectl apply -f -
+  shell: |
+    kubectl create namespace argocd --dry-run=client -o yaml | kubectl apply -f -
   environment:
     KUBECONFIG: "{{ kubeconfig_path }}"
   changed_when: false
+
 
 #############################################
 # Install ArgoCD
