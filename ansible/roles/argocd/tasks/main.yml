@@ -149,14 +149,13 @@
 #############################################
 # Get ArgoCD admin password
 #############################################
-- name: Get ArgoCD initial admin password
-  command: >
-    kubectl get secret argocd-initial-admin-secret
-    -n argocd
-    -o jsonpath="{.data.password}"
+- name: Get ArgoCD admin password
+  shell: |
+    kubectl get secret argocd-initial-admin-secret -n argocd -o jsonpath="{.data.password}" | base64 -d
   register: argocd_password
   changed_when: false
+  become: yes
+  become_user: ubuntu
 
-- name: Decode ArgoCD admin password
-  debug:
-    msg: "ArgoCD admin password: {{ argocd_password.stdout | b64decode }}"
+- debug:
+    msg: "ArgoCD admin password: {{ argocd_password.stdout }}"
